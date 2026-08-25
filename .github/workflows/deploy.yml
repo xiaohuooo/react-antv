@@ -1,0 +1,49 @@
+# GitHub Actions 工作流名称（随便取）
+name: Deploy React 项目到 GitHub Pages
+ 
+# 触发条件：当推送到 main 分支时触发
+on:
+  push:
+    branches: [main]
+ 
+# 给 GITHUB_TOKEN 授权（否则后面无法部署 Pages）
+permissions:
+  contents: read     # 允许读取仓库内容
+  pages: write       # 允许写入 GitHub Pages（发布）
+  id-token: write    # 允许 OIDC 身份验证（部署时需要）
+ 
+jobs:
+  # 第一个 Job：构建项目
+  build:
+    runs-on: ubuntu-latest  # 在 GitHub 提供的 Ubuntu 最新虚拟机上运行
+    steps:
+      # 1. 检出（checkout）代码
+      - uses: actions/checkout@v4
+ 
+      # 2. 安装 Node.js 环境
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10  # 指定 pnpm 版本，也可以不写 version 使用最新版
+ 
+      # 3. 安装依赖（等价于 npm install，但 npm ci 更快、更稳定）
+      - run: pnpm install
+ 
+      # 4. 构建打包（Vite 会把代码打包到 dist 文件夹）
+      - run: pnpm run build
+ 
+      # 5. 上传打包好的 dist 文件夹，作为 artifact 供后续部署使用
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist  # 指定要上传的文件夹
+ 
+  # 第二个 Job：部署到 GitHub Pages
+  deploy:
+    needs: build  # 必须等 build 任务完成后再执行
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages  # 指定部署环境名称（固定写法）
+      url: ${{ steps.deployment.outputs.page_url }} # 部署完成后生成的访问 URL
+    steps:
+      # 6. 使用 GitHub 官方的 Pages 部署 Action
+      - uses: actions/deploy-pages@v4
+        id: deployment  # 给这个步骤起个 ID，方便引用它的输出变量
