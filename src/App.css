@@ -1,0 +1,319 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  width: 100%;
+}
+
+#root,
+body,
+html {
+  height: 100%;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.menu-bar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 8px;
+  gap: 4px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.left-panel {
+  display: flex;
+  flex-shrink: 0;
+  width: 280px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.left-panel-categories {
+  display: flex;
+  flex-direction: column;
+  width: 56px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.left-panel-category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* width: 56px; */
+  padding: 8px 4px;
+  cursor: pointer;
+  font-size: 11px;
+  gap: 2px;
+  border-left: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.left-panel-category-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.left-panel-category-item.active {
+  /* background: rgba(22, 119, 255, 0.15); */
+  border-left-color: #1677ff;
+  color: #1677ff;
+}
+
+.left-panel-tree-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.left-panel-tree {
+  /* flex-shrink: 0; */
+  /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
+  overflow: auto;
+  padding: 8px;
+}
+
+.left-panel-components {
+  /* flex: 1; */
+  overflow: auto;
+  padding: 8px;
+}
+
+.left-panel-component-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.left-panel-component-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 4px;
+  cursor: grab;
+  border-radius: 4px;
+  font-size: 11px;
+  gap: 4px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.left-panel-component-item:hover {
+  background: rgba(22, 119, 255, 0.1);
+  border-color: #1677ff;
+}
+
+.left-panel-component-item .component-icon {
+  font-size: 24px;
+}
+
+.left-panel-component-item.unActive {
+  display: none;
+}
+
+.center-tabs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.center-tabs .ant-tabs-tab-remove {
+  padding: 0 2px;
+}
+
+.center-tabs .ant-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.center-tabs .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+}
+
+.center-tabs .ant-tabs-content {
+  height: 100%;
+}
+
+.left-panel-tree-area .ant-tabs-content {
+  height: 100%;
+}
+
+.left-panel-tree-area .ant-tabs-tabpane {
+  height: 100%;
+}
+
+.center-tabs .ant-tabs-tabpane {
+  height: 100%;
+}
+
+.center-tabs-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.ruler-horizontal {
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 0;
+  height: 24px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ruler-vertical {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ruler-corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  z-index: 11;
+}
+
+.canvas-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.canvas-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.right-panel {
+  display: flex;
+  flex-shrink: 0;
+  width: 320px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.right-panel .ant-tabs-content {
+  height: 100%;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ant-color-text) transparent;
+}
+
+.graph-container {
+  width: 100%;
+  height: 100%;
+  /* background: var(--bg-color); */
+}
+
+.x6-widget-transform::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  /* 让边框在内容外部 */
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to right, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 0 0 / 100% 1px no-repeat,
+    repeating-linear-gradient(to right, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 0 100% / 100% 1px no-repeat,
+    repeating-linear-gradient(to bottom, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 0 0 / 1px 100% no-repeat,
+    repeating-linear-gradient(to bottom, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 100% 0 / 1px 100% no-repeat;
+}
+
+.x6-widget-transform>div {
+  background-color: transparent;
+  border-color: rgb(0, 170, 255);
+  width: 8px;
+  height: 8px;
+}
+
+.x6-widget-transform .x6-widget-transform-rotate {
+  width: 9px;
+  height: 9px;
+}
+
+.x6-widget-transform>div:hover {
+  background-color: transparent;
+}
+
+.x6-widget-selection-box {
+  border-color: transparent;
+}
+
+.x6-widget-selection-box1::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to right, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 0 0 / 100% 1px no-repeat,
+    repeating-linear-gradient(to right, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 0 100% / 100% 1px no-repeat,
+    repeating-linear-gradient(to bottom, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 0 0 / 1px 100% no-repeat,
+    repeating-linear-gradient(to bottom, rgb(0, 170, 255) 0, rgb(0, 170, 255) 8px, transparent 8px, transparent 12px) 100% 0 / 1px 100% no-repeat;
+}
+
+.x6-graph-scroller {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ant-color-text) transparent;
+}
+
+.ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.left-panel .ant-tabs-nav {
+  padding-left: 10px;
+}
+.x6-widget-selection-inner{
+  box-shadow: none;
+}
