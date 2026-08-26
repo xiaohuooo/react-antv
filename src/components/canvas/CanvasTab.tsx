@@ -201,7 +201,9 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     graph.use(new History()); // 撤销/重做
 
     // 边选中时显示端点圆 / 顶点圆，取消选中时隐藏
+    // 画线模式期间禁止添加选中工具（顶点/端点圆），避免正在绘制的边被意外选中
     graph.on("cell:selected", ({ cell }: any) => {
+      if (lineModeRef.current !== 'none') return;
       if (cell && cell.isEdge()) addEdgeHandleTools(cell);
     });
     graph.on("cell:unselected", ({ cell }: any) => {
@@ -432,7 +434,7 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     };
     // blank 与 cell 都要监听：光标在连线上时走 cell:click，在空白时走 blank:click
     graph.on("blank:click", ({ e }: { e: MouseEvent }) => {
-      console.log(e.detail);
+      if (lineModeRef.current === 'none') return;
       if (e.detail === 2) { // 双击
         // finishLine(true);
       } else if (e.detail === 1) { // 单击
@@ -440,7 +442,7 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
       }
     });
     graph.on("cell:click", ({ e }: { e: MouseEvent }) => {
-      console.log(e.detail);
+      if (lineModeRef.current === 'none') return;
       if (e.detail === 2) { // 双击
         // finishLine(true);
       } else if (e.detail === 1) { // 单击
@@ -676,14 +678,14 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
           containerRef.current?.classList.add("dragging-selected");
           debounce(
             (n: any) => {
-              graph.on("node:mouseup", ({ node }: any) => {
+              graph.once("node:mouseup", ({ node }: any) => {
                 graph.cleanSelection();
                 graph.clearTransformWidgets()
                 graph.select(n);
                 graph.createTransformWidget(n);
               });
             },
-            300,
+            0,
             node
           );
           return
@@ -722,6 +724,8 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
       });
     });
     graph.on("edge:moved", ({ cell }: any) => {
+      // 画线模式期间禁止因边移动而自动选中（setTarget 可能触发此事件）
+      if (lineModeRef.current !== 'none') return;
       if (!graph.isSelected(cell)) {
         graph.cleanSelection();
         graph.clearTransformWidgets()
@@ -837,8 +841,9 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
             existingBox.remove();
           }
         }
-        // 全选
+        // 全选（画线模式期间禁用，防止选中正在绘制的边）
       } else if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        if (lineModeRef.current !== 'none') return;
         e.preventDefault();
         const allCells = graph.getCells();
         graph.select(allCells);
