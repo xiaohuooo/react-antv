@@ -212,35 +212,39 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
 
     // 选中元素变化：同步到全局状态并记录包围盒（用于标尺选择框）
     graph.on("selection:changed", ({ added, removed, selected }: any) => {
-      if (removed.length > 0 && removed[0].children) {
-        removed[0].setAttrs({ body: { stroke: 'transparent' } })
-      }
-      const nodeIds: string[] = [];
-      const edgeIds: string[] = [];
-      selected.forEach((cell: any) => {
-        if (cell.isNode()) nodeIds.push(cell.id);
-        if (cell.isEdge()) edgeIds.push(cell.id);
-      });
-      setSelectedCellIds(nodeIds);
-      setSelectedEdgeIds(edgeIds);
-      if (selected.length === 1) {
-        const bbox = selected[0].getBBox();
-        setSelectionBBox({
-          x: bbox.x,
-          y: bbox.y,
-          w: bbox.width,
-          h: bbox.height,
+      try {
+        if (removed.length > 0 && removed[0].children) {
+          removed[0].setAttrs({ body: { stroke: 'transparent' } })
+        }
+        const nodeIds: string[] = [];
+        const edgeIds: string[] = [];
+        selected.forEach((cell: any) => {
+          if (cell.isNode()) nodeIds.push(cell.id);
+          if (cell.isEdge()) edgeIds.push(cell.id);
         });
-      } else if (selected.length > 1) {
-        const cells = selected.map((id) => graph.getCellById(id));
-        const bbox = graph.getCellsBBox(cells);
-        setSelectionBBox({
-          x: bbox.x,
-          y: bbox.y,
-          w: bbox.width,
-          h: bbox.height,
-        });
-      }
+        setSelectedCellIds(nodeIds);
+        setSelectedEdgeIds(edgeIds);
+        if (selected.length === 1) {
+          const bbox = selected[0].getBBox();
+          setSelectionBBox({
+            x: bbox.x,
+            y: bbox.y,
+            w: bbox.width,
+            h: bbox.height,
+          });
+        } else if (selected.length > 1) {
+          const cells = selected.map((id) => graph.getCellById(id));
+          const bbox = graph.getCellsBBox(cells);
+          if (bbox) {
+            setSelectionBBox({
+              x: bbox.x,
+              y: bbox.y,
+              w: bbox.width,
+              h: bbox.height,
+            });
+          }
+        }
+      } catch (err) { console.error("selection:changed error:", err); }
     });
     // 画布缩放：同步 zoom 和 translate 到标尺
     graph.on("scale", ({ sx }: { sx: number }) => {
@@ -455,107 +459,128 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
 
     // 节点添加：根据类型初始化风扇动画 / 表格 / SVG 动画
     graph.on("node:added", ({ node }: any) => {
-      // 弧线/扇形/弓形：按外框尺寸重算路径（覆盖从 JSON 加载的非默认尺寸）
-      updateArcSectorChord(node);
-      // 开关：初始化椭圆缩放
-      if (node.shape === "custom-switch") {
-        updateSwitchScale(node, graph);
-      }
-      // 风扇：根据叶片数和配色模式启动旋转动画
-      if (node.shape === "custom-fan") {
-        const data = node.getData() || {};
-        const bladeCount = data.bladeCount || 3;
-        const colorMode = data.colorMode || "mono";
-        setupFanNode(node, bladeCount, colorMode, graph);
-      }
-      // 表格：按配置渲染行列、标题、合并列等
-      if (node.shape === "custom-simpletable") {
-        const data = node.getData() || {};
-        setupTableNode(node, {
-          showTitle: data.showTitle ?? true,
-          mergeCols: data.mergeCols ?? 0,
-          rowCount: data.rowCount ?? 4,
-          colCount: data.colCount ?? 3,
-          alternateFill: data.alternateFill ?? true,
-          titleText: data.titleText ?? "表格标题",
-        });
-      }
-      // 动态 SVG：延迟启动内部动画（等待 DOM 就绪）
-      if (
-        node.shape === "custom-svg-dynamic1" ||
-        node.shape === "custom-svg-dynamic2" ||
-        node.shape === "custom-svg-file1" ||
-        node.shape === "custom-svg-file2"
-      ) {
-        // 延迟以确保 DOM 完成渲染后再启动动画
-        setTimeout(() => setupSvgAnimations(node, graph), 50);
-      }
+      try {
+        // 弧线/扇形/弓形：按外框尺寸重算路径（覆盖从 JSON 加载的非默认尺寸）
+        updateArcSectorChord(node);
+      } catch (err) { console.error("node:added updateArcSectorChord error:", err); }
+      try {
+        // 开关：初始化椭圆缩放
+        if (node.shape === "custom-switch") {
+          updateSwitchScale(node, graph);
+        }
+      } catch (err) { console.error("node:added updateSwitchScale error:", err); }
+      try {
+        // 风扇：根据叶片数和配色模式启动旋转动画
+        if (node.shape === "custom-fan") {
+          const data = node.getData() || {};
+          const bladeCount = data.bladeCount || 3;
+          const colorMode = data.colorMode || "mono";
+          setupFanNode(node, bladeCount, colorMode, graph);
+        }
+      } catch (err) { console.error("node:added setupFanNode error:", err); }
+      try {
+        // 表格：按配置渲染行列、标题、合并列等
+        if (node.shape === "custom-simpletable") {
+          const data = node.getData() || {};
+          setupTableNode(node, {
+            showTitle: data.showTitle ?? true,
+            mergeCols: data.mergeCols ?? 0,
+            rowCount: data.rowCount ?? 4,
+            colCount: data.colCount ?? 3,
+            alternateFill: data.alternateFill ?? true,
+            titleText: data.titleText ?? "表格标题",
+          });
+        }
+      } catch (err) { console.error("node:added setupTableNode error:", err); }
+      try {
+        // 动态 SVG：延迟启动内部动画（等待 DOM 就绪）
+        if (
+          node.shape === "custom-svg-dynamic1" ||
+          node.shape === "custom-svg-dynamic2" ||
+          node.shape === "custom-svg-file1" ||
+          node.shape === "custom-svg-file2"
+        ) {
+          // 延迟以确保 DOM 完成渲染后再启动动画
+          setTimeout(() => {
+            try { setupSvgAnimations(node, graph); }
+            catch (err) { console.error("setupSvgAnimations error:", err); }
+          }, 50);
+        }
+      } catch (err) { console.error("node:added svg setup error:", err); }
     });
 
     // 节点尺寸实时变化（拖拽缩放过程中）：风扇/开关实时调整大小，弧线/扇形重算路径
     let fanResizeRaf: number | null = null;
     graph.on("node:change:size", ({ node }: any) => {
-      if (node.shape === "custom-fan") {
-        // rAF 节流：每帧最多更新一次，避免高频 change:size 导致卡顿
-        if (fanResizeRaf !== null) cancelAnimationFrame(fanResizeRaf);
-        fanResizeRaf = requestAnimationFrame(() => {
-          fanResizeRaf = null;
-          updateFanScale(node, graph);
-        });
-        return;
-      }
-      // 开关：实时随外框尺寸同步拨杆/椭圆大小与描边
-      if (node.shape === "custom-switch") {
-        updateSwitchScale(node, graph);
-        return;
-      }
-      // 弧线/扇形/弓形：实时随外框尺寸重算路径
-      if (
-        node.shape === "custom-arc" ||
-        node.shape === "custom-sector" ||
-        node.shape === "custom-chord"
-      ) {
-        updateArcSectorChord(node);
-      }
-      if (
-        node.shape.includes("custom-echarts") ||
-        node.shape === "custom-tree" ||
-        node.shape === "custom-vtable"
-      ) {
-        updateEchartsSize(node);
-      }
+      try {
+        if (node.shape === "custom-fan") {
+          // rAF 节流：每帧最多更新一次，避免高频 change:size 导致卡顿
+          if (fanResizeRaf !== null) cancelAnimationFrame(fanResizeRaf);
+          fanResizeRaf = requestAnimationFrame(() => {
+            fanResizeRaf = null;
+            try { updateFanScale(node, graph); }
+            catch (err) { console.error("updateFanScale error:", err); }
+          });
+          return;
+        }
+        // 开关：实时随外框尺寸同步拨杆/椭圆大小与描边
+        if (node.shape === "custom-switch") {
+          updateSwitchScale(node, graph);
+          return;
+        }
+        // 弧线/扇形/弓形：实时随外框尺寸重算路径
+        if (
+          node.shape === "custom-arc" ||
+          node.shape === "custom-sector" ||
+          node.shape === "custom-chord"
+        ) {
+          updateArcSectorChord(node);
+        }
+        if (
+          node.shape.includes("custom-echarts") ||
+          node.shape === "custom-tree" ||
+          node.shape === "custom-vtable"
+        ) {
+          updateEchartsSize(node);
+        }
+      } catch (err) { console.error("node:change:size error:", err); }
     });
 
     // 节点缩放：风扇重新计算椭圆比例、表格重绘、SVG 动画重启
     graph.on("node:resizing", ({ node }: any) => {
-      if (node.shape === "custom-fan") {
-        updateFanScale(node, graph);
-      }
-      if (node.shape === "custom-switch") {
-        updateSwitchScale(node, graph);
-      }
-      if (node.shape === "custom-simpletable") {
-        const data = node.getData() || {};
-        setupTableNode(node, {
-          showTitle: data.showTitle ?? true,
-          mergeCols: data.mergeCols ?? 0,
-          rowCount: data.rowCount ?? 4,
-          colCount: data.colCount ?? 3,
-          alternateFill: data.alternateFill ?? true,
-          titleText: data.titleText ?? "表格标题",
-        });
-      }
-      if (
-        node.shape === "custom-svg-dynamic1" ||
-        node.shape === "custom-svg-dynamic2" ||
-        node.shape === "custom-svg-file1" ||
-        node.shape === "custom-svg-file2"
-      ) {
-        // 延迟以确保 DOM 完成渲染后再启动动画
-        setTimeout(() => setupSvgAnimations(node, graph), 50);
-      }
-      // 分组缩放同步到子节点（非分组节点会提前 return）
-      syncGroupChildrenTransform(node, graph);
+      try {
+        if (node.shape === "custom-fan") {
+          updateFanScale(node, graph);
+        }
+        if (node.shape === "custom-switch") {
+          updateSwitchScale(node, graph);
+        }
+        if (node.shape === "custom-simpletable") {
+          const data = node.getData() || {};
+          setupTableNode(node, {
+            showTitle: data.showTitle ?? true,
+            mergeCols: data.mergeCols ?? 0,
+            rowCount: data.rowCount ?? 4,
+            colCount: data.colCount ?? 3,
+            alternateFill: data.alternateFill ?? true,
+            titleText: data.titleText ?? "表格标题",
+          });
+        }
+        if (
+          node.shape === "custom-svg-dynamic1" ||
+          node.shape === "custom-svg-dynamic2" ||
+          node.shape === "custom-svg-file1" ||
+          node.shape === "custom-svg-file2"
+        ) {
+          // 延迟以确保 DOM 完成渲染后再启动动画
+          setTimeout(() => {
+            try { setupSvgAnimations(node, graph); }
+            catch (err) { console.error("setupSvgAnimations error:", err); }
+          }, 50);
+        }
+        // 分组缩放同步到子节点（非分组节点会提前 return）
+        syncGroupChildrenTransform(node, graph);
+      } catch (err) { console.error("node:resizing error:", err); }
     });
     graph.on("node:resized", ({ node }: any) => {
       containerRef.current?.classList.remove("dragging-selected");
@@ -563,7 +588,9 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
 
     // 节点旋转：分组旋转同步到子节点（非分组节点会提前 return）
     graph.on("node:rotating", ({ node }: any) => {
-      syncGroupChildrenTransform(node, graph);
+      try {
+        syncGroupChildrenTransform(node, graph);
+      } catch (err) { console.error("node:rotating error:", err); }
       // containerRef.current?.classList.remove("dragging-selected");
     });
     graph.on("node:rotated", ({ node }: any) => {
@@ -573,9 +600,11 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
 
     // 节点移除：清理风扇动画避免内存泄漏
     graph.on("node:removed", ({ node }: any) => {
-      if (node.shape === "custom-fan") {
-        cleanupFanAnimation(node, graph);
-      }
+      try {
+        if (node.shape === "custom-fan") {
+          cleanupFanAnimation(node, graph);
+        }
+      } catch (err) { console.error("node:removed cleanup error:", err); }
       setSelectionBBox(null)
     });
     graph.on("edge:removed", ({ node }: any) => {
@@ -591,25 +620,27 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
 
     // 悬停节点时显示连接桩
     graph.on("node:mouseenter", ({ node }: any) => {
-      const data = node.store.data.attrs || {};
-      if (!data.hasPorts) return;
-      const rects = node.parent?.children?.filter((item: any) => item.id !== node.id) || [];
-      const views = rects.map((item: any) => graph.findViewByCell(item));
-      const allPorts: any = [];
-      views.forEach((view) => {
-        if (view && view.container) {
-          const ports = view.container.querySelectorAll(".x6-port-body");
-          // 将 NodeList 转换为数组并合并
-          allPorts.push(...Array.from(ports));
-        }
-      });
-      const container = containerRef.current as HTMLElement;
-      if (!container) return;
-      const ports = container.querySelectorAll(
-        ".x6-port-body",
-      ) as NodeListOf<SVGElement>;
-      showPorts(ports, true);
-      showPorts(allPorts, false);
+      try {
+        const data = node.store.data.attrs || {};
+        if (!data.hasPorts) return;
+        const rects = node.parent?.children?.filter((item: any) => item.id !== node.id) || [];
+        const views = rects.map((item: any) => graph.findViewByCell(item));
+        const allPorts: any = [];
+        views.forEach((view) => {
+          if (view && view.container) {
+            const ports = view.container.querySelectorAll(".x6-port-body");
+            // 将 NodeList 转换为数组并合并
+            allPorts.push(...Array.from(ports));
+          }
+        });
+        const container = containerRef.current as HTMLElement;
+        if (!container) return;
+        const ports = container.querySelectorAll(
+          ".x6-port-body",
+        ) as NodeListOf<SVGElement>;
+        showPorts(ports, true);
+        showPorts(allPorts, false);
+      } catch (err) { console.error("node:mouseenter error:", err); }
     });
 
     // 离开节点时隐藏连接桩
@@ -623,84 +654,96 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     });
     let lastSelectedNode: any | null = null;
     graph.on("node:move", ({ node }: any) => {
-      if (node.parent) {
-        graph.cleanSelection();
-      }
-      lastSelectedNode = node;
+      try {
+        if (node.parent) {
+          graph.cleanSelection();
+        }
+        lastSelectedNode = node;
+      } catch (err) { console.error("node:move error:", err); }
     })
     // 拖动已选中节点时隐藏包围框与操作点（需求 7），拖动结束后恢复
     const handleDragVisualHide = ({ node, current, previous, options }: any) => {
-      const selectedCells = graph.getSelectedCells();
-      // console.log("handleDragVisualHide", selectedCells);
-      const el = node.parent ? node.parent : node;
-      if (selectedCells.length > 1) {
-        const cells = selectedCells.map((id) => graph.getCellById(id));
-        const bbox = graph.getCellsBBox(cells);
-        setSelectionBBox({
-          x: bbox.x,
-          y: bbox.y,
-          w: bbox.width,
-          h: bbox.height,
-        });
-      } else {
-        // 实时标尺更新
-        const bbox = el.getBBox();
-        setSelectionBBox({
-          x: bbox.x,
-          y: bbox.y,
-          w: bbox.width,
-          h: bbox.height,
-        });
-      }
+      try {
+        const selectedCells = graph.getSelectedCells();
+        // console.log("handleDragVisualHide", selectedCells);
+        const el = node.parent ? node.parent : node;
+        if (selectedCells.length > 1) {
+          const cells = selectedCells.map((id) => graph.getCellById(id));
+          const bbox = graph.getCellsBBox(cells);
+          if (bbox) {
+            setSelectionBBox({
+              x: bbox.x,
+              y: bbox.y,
+              w: bbox.width,
+              h: bbox.height,
+            });
+          }
+        } else {
+          // 实时标尺更新
+          const bbox = el.getBBox();
+          setSelectionBBox({
+            x: bbox.x,
+            y: bbox.y,
+            w: bbox.width,
+            h: bbox.height,
+          });
+        }
 
-      if (graph.isSelected(el)) {
-        containerRef.current?.classList.add("dragging-selected");
-      } else {
-        const isSameNode = lastSelectedNode?.children?.find((child: any) => child.id === node.id);
-        console.log(isSameNode, lastSelectedNode, '---isSameNode');
-        if ((selectedCells.length == 1 || selectedCells.length == 0) && node.parent && !options.skipParentHandler && !isSameNode) {
-          console.log('isSameNode=========');
-          const { x: cx, y: cy } = current;
-          const { x: px, y: py } = previous;
-          const parent = node.parent;
-          const { x, y } = parent.getPosition();
-          parent.setPosition(x - (px - cx), y - (py - cy));
-          parent.children.filter((child: any) => child !== node).forEach((child: any) => {
-            const { x, y } = child.getPosition();
-            child.prop(
-              {
-                position: { x: x - (px - cx), y: y - (py - cy) },
-              },
-              { skipParentHandler: true },
-            )
-            child.setPosition(x - (px - cx), y - (py - cy));
-          })
+        if (graph.isSelected(el)) {
           containerRef.current?.classList.add("dragging-selected");
+        } else {
+          const isSameNode = lastSelectedNode?.children?.find((child: any) => child.id === node.id);
+          console.log(isSameNode, lastSelectedNode, '---isSameNode');
+          if ((selectedCells.length == 1 || selectedCells.length == 0) && node.parent && !options.skipParentHandler && !isSameNode) {
+            console.log('isSameNode=========');
+            const { x: cx, y: cy } = current;
+            const { x: px, y: py } = previous;
+            const parent = node.parent;
+            const { x, y } = parent.getPosition();
+            parent.setPosition(x - (px - cx), y - (py - cy));
+            (parent.children || []).filter((child: any) => child !== node).forEach((child: any) => {
+              const { x, y } = child.getPosition();
+              child.prop(
+                {
+                  position: { x: x - (px - cx), y: y - (py - cy) },
+                },
+                { skipParentHandler: true },
+              )
+              child.setPosition(x - (px - cx), y - (py - cy));
+            })
+            containerRef.current?.classList.add("dragging-selected");
+            debounce(
+              (n: any) => {
+                graph.once("node:mouseup", ({ node }: any) => {
+                  try {
+                    graph.cleanSelection();
+                    graph.clearTransformWidgets()
+                    graph.select(n);
+                    graph.createTransformWidget(n);
+                  } catch (err) { console.error("node:mouseup select error:", err); }
+                });
+              },
+              0,
+              node
+            );
+            return
+          }
+          // 防抖执行
           debounce(
             (n: any) => {
-              graph.once("node:mouseup", ({ node }: any) => {
+              try {
                 graph.cleanSelection();
                 graph.clearTransformWidgets()
                 graph.select(n);
                 graph.createTransformWidget(n);
-              });
+              } catch (err) { console.error("debounce select error:", err); }
             },
-            0,
-            node
+            10,
+            el
           );
-          return
         }
-        // 防抖执行
-        debounce(
-          (n: any) => {
-            graph.cleanSelection();
-            graph.clearTransformWidgets()
-            graph.select(n);
-            graph.createTransformWidget(n);
-          },
-          10,
-          el
-        );
+      } catch (err) {
+        console.error("handleDragVisualHide error:", err);
       }
     };
     const handleDragVisualShow = () => {
@@ -714,84 +757,94 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     graph.on("node:change:position", handleDragVisualHide);
     // 边拖动：更新选择框
     graph.on("edge:change:terminal", ({ cell }: any) => {
-      if (!cell) return;
-      const bbox = cell.getBBox();
-      setSelectionBBox({
-        x: bbox.x,
-        y: bbox.y,
-        w: bbox.width,
-        h: bbox.height,
-      });
+      try {
+        if (!cell) return;
+        const bbox = cell.getBBox();
+        setSelectionBBox({
+          x: bbox.x,
+          y: bbox.y,
+          w: bbox.width,
+          h: bbox.height,
+        });
+      } catch (err) { console.error("edge:change:terminal error:", err); }
     });
     graph.on("edge:moved", ({ cell }: any) => {
-      // 画线模式期间禁止因边移动而自动选中（setTarget 可能触发此事件）
-      if (lineModeRef.current !== 'none') return;
-      if (!graph.isSelected(cell)) {
-        graph.cleanSelection();
-        graph.clearTransformWidgets()
-        graph.select(cell);
-        addEdgeHandleTools(cell)
-      }
+      try {
+        // 画线模式期间禁止因边移动而自动选中（setTarget 可能触发此事件）
+        if (lineModeRef.current !== 'none') return;
+        if (!graph.isSelected(cell)) {
+          graph.cleanSelection();
+          graph.clearTransformWidgets()
+          graph.select(cell);
+          addEdgeHandleTools(cell)
+        }
+      } catch (err) { console.error("edge:moved error:", err); }
     })
     containerRef.current.addEventListener("mouseup", handleDragVisualShow);
     const fun = (selectedCells: any[]) => {
-      if (selectedCells.length > 1) {
-        const cells = selectedCells.map((id) => graph.getCellById(id));
-        const bbox = graph.getCellsBBox(cells);
-        setSelectionBBox({
-          x: bbox.x,
-          y: bbox.y,
-          w: bbox.width,
-          h: bbox.height,
-        });
-      } else {
-        // 实时标尺更新
-        const bbox = selectedCells[0].getBBox();
-        setSelectionBBox({
-          x: bbox.x,
-          y: bbox.y,
-          w: bbox.width,
-          h: bbox.height,
-        });
-      }
+      try {
+        if (selectedCells.length > 1) {
+          const cells = selectedCells.map((id) => graph.getCellById(id));
+          const bbox = graph.getCellsBBox(cells);
+          if (bbox) {
+            setSelectionBBox({
+              x: bbox.x,
+              y: bbox.y,
+              w: bbox.width,
+              h: bbox.height,
+            });
+          }
+        } else {
+          // 实时标尺更新
+          const bbox = selectedCells[0].getBBox();
+          setSelectionBBox({
+            x: bbox.x,
+            y: bbox.y,
+            w: bbox.width,
+            h: bbox.height,
+          });
+        }
+      } catch (err) { console.error("fun bbox error:", err); }
     }
     // 方向键微调选中元素位置（每次 1 个网格）
     // 节点用 setPosition；边（自由直线 / 折线）用 translate —— 同时移动 source、target 和 vertices
     const moveSelectedBy = (dx: number, dy: number) => {
-      const selected = graph.getSelectedCells();
-      if (selected.length === 0) return;
-      const childIds = new Set();
-      selected.forEach(item => {
-        if (item.children && Array.isArray(item.children)) {
-          item.children.forEach(childId => childIds.add(childId.id));
-        }
-      });
-      const result = selected.filter(item => !childIds.has(item.id));
-      console.log(result, '---childs');
-      result.forEach((cell: any) => {
-        if (cell.isNode && cell.isNode()) {
-          // 分组子节点不可单独移动（只能随分组一起移动），跳过
-          // if (cell.parent && cell.hasParent()) {
-          //   const parent = cell.parent;
-          //   const { x, y } = parent.getPosition();
-          //   parent.setPosition(x + dx, y + dy);
-          //   parent.children.forEach((child: any) => {
-          //     const { x, y } = child.getPosition();
-          //     child.setPosition(x + dx, y + dy);
-          //   })
-          //   return
-          // }
-          const { x, y } = cell.getPosition();
-          cell.setPosition(x + dx, y + dy);
-          cell.children && cell.children.forEach((child: any) => {
-            const { x, y } = child.getPosition();
-            child.setPosition(x + dx, y + dy);
-          })
-        } else if (cell.isEdge && cell.isEdge()) {
-          cell.translate(dx, dy);
-        }
-      });
-      containerRef.current?.classList.remove("dragging-selected");
+      try {
+        const selected = graph.getSelectedCells();
+        if (selected.length === 0) return;
+        const childIds = new Set();
+        selected.forEach(item => {
+          if (item.children && Array.isArray(item.children)) {
+            item.children.forEach(childId => childIds.add(childId.id));
+          }
+        });
+        const result = selected.filter(item => !childIds.has(item.id));
+        console.log(result, '---childs');
+        result.forEach((cell: any) => {
+          if (cell.isNode && cell.isNode()) {
+            // 分组子节点不可单独移动（只能随分组一起移动），跳过
+            // if (cell.parent && cell.hasParent()) {
+            //   const parent = cell.parent;
+            //   const { x, y } = parent.getPosition();
+            //   parent.setPosition(x + dx, y + dy);
+            //   parent.children.forEach((child: any) => {
+            //     const { x, y } = child.getPosition();
+            //     child.setPosition(x + dx, y + dy);
+            //   })
+            //   return
+            // }
+            const { x, y } = cell.getPosition();
+            cell.setPosition(x + dx, y + dy);
+            cell.children && cell.children.forEach((child: any) => {
+              const { x, y } = child.getPosition();
+              child.setPosition(x + dx, y + dy);
+            })
+          } else if (cell.isEdge && cell.isEdge()) {
+            cell.translate(dx, dy);
+          }
+        });
+        containerRef.current?.classList.remove("dragging-selected");
+      } catch (err) { console.error("moveSelectedBy error:", err); }
     };
     // 全局键盘快捷键
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -829,13 +882,15 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
         const selected = graph.getSelectedCells();
         if (selected.length > 0) {
           e.preventDefault();
-          selected.forEach((cell: any) => {
-            console.log(cell);
-            if (cell.children) {
-              graph.removeCells(cell.children);
-            }
-          })
-          graph.removeCells(selected);
+          try {
+            selected.forEach((cell: any) => {
+              console.log(cell);
+              if (cell.children) {
+                graph.removeCells(cell.children);
+              }
+            })
+            graph.removeCells(selected);
+          } catch (err) { console.error("Delete removeCells error:", err); }
           const existingBox = document.querySelector('.x6-widget-selection-box1');
           if (existingBox) {
             existingBox.remove();
@@ -865,8 +920,10 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
       } else if ((e.ctrlKey || e.metaKey) && e.key === "v") {
         e.preventDefault();
         if (!graph.isClipboardEmpty()) {
-          const cells = graph.paste({ offset: 32 });
-          remapPastedGroupChildren(cells as any[], graph);
+          try {
+            const cells = graph.paste({ offset: 32 });
+            remapPastedGroupChildren(cells as any[], graph);
+          } catch (err) { console.error("Paste error:", err); }
           // graph.cleanSelection();
           // graph.clearTransformWidgets();
           // graph.select(cells);
@@ -953,47 +1010,51 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
 
     const graph = graphRef.current;
     if (!graph) return;
-    // 清空画布选择
-    graph.cleanSelection();
+    try {
+      // 清空画布选择
+      graph.cleanSelection();
 
-    // 将屏幕坐标转换为画布坐标
-    const localPoint = graph.clientToLocal({ x: e.clientX, y: e.clientY });
-    const basicTypes = [
-      "line",
-      "rect",
-      "circle",
-      "ellipse",
-      "polygon",
-      "polyline",
-      "path",
-      "text",
-      "arc",
-      "sector",
-      "chord",
-    ];
-    let newNode: any;
-    if (basicTypes.includes(componentKey)) {
-      newNode = createNodeByType(
-        graph,
-        componentKey,
-        localPoint.x,
-        localPoint.y,
-      );
-    } else {
-      newNode = createCustomNodeByType(
-        graph,
-        componentKey,
-        localPoint.x,
-        localPoint.y,
-      );
-    }
-    // 新建对象完成后处于选中状态（需求 5）；此前已 cleanSelection，故仅选中新建对象
-    if (newNode) {
-      // 拖动时鼠标锚定在对象中心，放置时让对象中心对齐鼠标落点
-      const { width, height } = newNode.getSize()
-      newNode.position(localPoint.x - width / 2, localPoint.y - height / 2)
-      graph.select(newNode);
-      graph.createTransformWidget(newNode);
+      // 将屏幕坐标转换为画布坐标
+      const localPoint = graph.clientToLocal({ x: e.clientX, y: e.clientY });
+      const basicTypes = [
+        "line",
+        "rect",
+        "circle",
+        "ellipse",
+        "polygon",
+        "polyline",
+        "path",
+        "text",
+        "arc",
+        "sector",
+        "chord",
+      ];
+      let newNode: any;
+      if (basicTypes.includes(componentKey)) {
+        newNode = createNodeByType(
+          graph,
+          componentKey,
+          localPoint.x,
+          localPoint.y,
+        );
+      } else {
+        newNode = createCustomNodeByType(
+          graph,
+          componentKey,
+          localPoint.x,
+          localPoint.y,
+        );
+      }
+      // 新建对象完成后处于选中状态（需求 5）；此前已 cleanSelection，故仅选中新建对象
+      if (newNode) {
+        // 拖动时鼠标锚定在对象中心，放置时让对象中心对齐鼠标落点
+        const { width, height } = newNode.getSize()
+        newNode.position(localPoint.x - width / 2, localPoint.y - height / 2)
+        graph.select(newNode);
+        graph.createTransformWidget(newNode);
+      }
+    } catch (err) {
+      console.error("handleDrop error:", err);
     }
   }, []);
 
