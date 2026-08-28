@@ -278,8 +278,8 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     // 给自由直线 / 折线添加端点圆和顶点工具（选中时调用）
     const addEdgeHandleTools = (edge: any) => {
       try {
-        edge.addTools([
-          { name: "vertices", args: { modifiers: ["ctrl"], attrs: { fill: 'rgb(0,170,255)', 'stroke-width': 1, r: 4, } } },
+        edge.addTools([ //removeRedundancies 是否自动移除冗余的路径点。
+          { name: "vertices", args: { modifiers: ["ctrl"], attrs: { fill: 'rgb(0,170,255)', 'stroke-width': 1, r: 4, }, removeRedundancies: false, } },
           { name: "circle-target-arrowhead" },
           { name: "circle-source-arrowhead" },
         ]);
