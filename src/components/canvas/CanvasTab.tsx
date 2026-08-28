@@ -193,7 +193,7 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     graph.use(new Snapline({
       resizing: true,
       filter: (cell: any) => {
-        return !cell.children
+        return !cell.children && !cell.parent;
       },
     })); // 对齐辅助线
     graph.use(new Keyboard()); // 键盘交互
