@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ant-design/icons": "^6.3.2",
+    "@ant-design/icons": "6.3.2",
     "@antv/x6": "^3.1.7",
     "@antv/x6-react-shape": "^3.0.1",
     "@visactor/react-vtable": "^1.26.2",
