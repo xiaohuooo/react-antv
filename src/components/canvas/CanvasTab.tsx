@@ -83,6 +83,8 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
   const pendingSelectEdgeRef = useRef<any>(null);
   // 结束绘制时的收尾函数（恢复可交互、挂载编辑工具），由主 useEffect 注入
   const finalizeFreeLineRef = useRef<(edge: any) => void>(() => { });
+  // 当前正在拖拽的节点（mousedown 标记 / mouseup 清除），供 Snapline filter 排除其父分组
+  const draggingNodeRef = useRef<any>(null);
   const useDebounce = () => {
     let timer = null;
 
@@ -192,10 +194,27 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
 
     graph.use(new Snapline({
       resizing: true,
+      // 对齐目标：包含独立节点和分组父节点；排除分组子节点（子节点随父节点移动，会造成冗余/跳动）
+      // 拖动分组内子节点时，额外排除其所有祖先分组，不与父分组产生对齐线
       filter: (cell: any) => {
-        return !cell.children && !cell.parent;
+        if (cell.parent) return false;
+        const dragging = draggingNodeRef.current;
+        if (dragging && dragging.parent) {
+          let ancestor: any = dragging.parent;
+          while (ancestor) {
+            if (cell === ancestor) return false;
+            ancestor = ancestor.parent;
+          }
+        }
+        return true;
       },
     })); // 对齐辅助线
+    // 记录拖拽起止节点：mousedown 标记当前节点，mouseup 清除（含画布外释放），供上方 filter 使用
+    const clearDraggingNode = () => { draggingNodeRef.current = null; };
+    graph.on("node:mousedown", ({ node }: any) => {
+      draggingNodeRef.current = node;
+    });
+    document.addEventListener("mouseup", clearDraggingNode);
     graph.use(new Keyboard()); // 键盘交互
     graph.use(new Clipboard()); // 剪贴板
     graph.use(new History()); // 撤销/重做
@@ -278,7 +297,7 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     // 给自由直线 / 折线添加端点圆和顶点工具（选中时调用）
     const addEdgeHandleTools = (edge: any) => {
       try {
-        edge.addTools([ //removeRedundancies 是否自动移除冗余的路径点。
+        edge.addTools([ //removeRedundancies 是否自动移除冗余的路径点,如果要在水平或垂直线中间加点必须设置为false
           { name: "vertices", args: { modifiers: ["ctrl"], attrs: { fill: 'rgb(0,170,255)', 'stroke-width': 1, r: 4, }, removeRedundancies: false, } },
           { name: "circle-target-arrowhead" },
           { name: "circle-source-arrowhead" },
@@ -983,6 +1002,7 @@ export default function CanvasTab({ tabId }: CanvasTabProps) {
     return () => {
       containerRef.current?.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleDragVisualShow);
+      document.removeEventListener("mouseup", clearDraggingNode);
       document.removeEventListener("keydown", handleKeyDown);
       graph.dispose();
       graphRef.current = null;
